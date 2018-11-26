@@ -7,6 +7,8 @@ help:
 	@echo "  - dist: build distribution package"
 	@echo "  - test: run test coverage"
 	@echo
+	@echo "  - lint: run pylint"
+	@echo
 	@echo "  - twine-test: upload to pypi test"
 	@echo "  - twine-dist: upload to pypi dist"
 	@echo
@@ -29,6 +31,10 @@ clean:
 test:
 	@echo "Running tests"
 	python setup.py test
+
+lint:
+	@echo "Running checks"
+	pylint json_doc tests
 
 twine-test:
 	twine upload --repository testpypi dist/*

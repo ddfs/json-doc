@@ -2,3 +2,4 @@ wheel
 twine
 setuptools
 cmarkgfm
+pylint
