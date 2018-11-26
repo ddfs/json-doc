@@ -1,5 +1,6 @@
-wheel
-twine
+readme-renderer>=24.0
+twine>=1.12.1
 setuptools
-cmarkgfm
-pylint
+cmarkgfm>=0.4.2
+pylint>=1.9.3
+unittest2>=1.1.0

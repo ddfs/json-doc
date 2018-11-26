@@ -1,2 +1,3 @@
+0.1.3 - functions returns bool if changed or result exist (excl. get)
 0.1.2 - refactored all functions. applied PEP.
 0.1.1 - initial release

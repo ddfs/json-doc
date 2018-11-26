@@ -45,14 +45,14 @@ def json_doc_get(doc, pointer, default=None):
     :param doc:
     :param pointer:
     :param default:
-    :return:
+    :return: mixed
     """
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    result = default
 
     # walk
-    _return = default
     for part in parts[:-1]:
         if isinstance(ref, Mapping) and part in ref:
             ref = ref[part]
@@ -60,19 +60,20 @@ def json_doc_get(doc, pointer, default=None):
             try:
                 ref = ref[int(part)]
             except IndexError:
-                return _return
+                return result
         else:
-            return _return
+            # empty or invalid doc falls here
+            return default
 
     # last
     if isinstance(ref, Mapping) and last in ref:
-        _return = ref[last]
+        result = ref[last]
     elif isinstance(ref, Sequence) and last.isdigit():
         try:
-            _return = ref[int(last)]
+            result = ref[int(last)]
         except IndexError:
             pass
-    return _return
+    return result
 
 
 def json_doc_set(doc, pointer, value=None):
@@ -86,12 +87,14 @@ def json_doc_set(doc, pointer, value=None):
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    changed = False
 
     # walk
     for part in parts[:-1]:
         if isinstance(ref, Mapping):
             if part not in ref:
                 ref[part] = {}
+                changed = True
             ref = ref[part]
         elif isinstance(ref, Sequence) and part.isdigit():
             ref = ref[int(part)]
@@ -101,12 +104,12 @@ def json_doc_set(doc, pointer, value=None):
     # last
     if isinstance(ref, Mapping):
         ref[last] = value
+        changed = True
     elif isinstance(ref, Sequence) and last.isdigit():
         ref[int(last)] = value
-    else:
-        raise Exception('Invalid document')
+        changed = True
 
-    return doc
+    return changed
 
 
 def json_doc_has(doc, pointer, value=None):
@@ -121,9 +124,9 @@ def json_doc_has(doc, pointer, value=None):
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    result = False
 
     # walk
-    _return = False
     for part in parts[:-1]:
         if isinstance(ref, Mapping) and part in ref:
             ref = ref[part]
@@ -131,31 +134,30 @@ def json_doc_has(doc, pointer, value=None):
             try:
                 ref = ref[int(part)]
             except IndexError:
-                return _return
+                return False
         else:
-            return _return
+            return False
 
     # last
     if isinstance(ref, Mapping) and last in ref:
         # test if value in list
         if value and isinstance(ref[last], Sequence):
             ref = ref[last]
-            _return = value in ref
+            result = value in ref
         elif value and isinstance(ref[last], Mapping):
-            _return = value == ref[last]
+            result = value == ref[last]
         else:
             # last one is dict and key is already there
-            _return = True
+            result = True
     elif isinstance(ref, Sequence) and last.isdigit():
         try:
             assert ref[int(last)]
-            _return = True
+            # check index exists and compare with value if given
+            result = value == ref[int(last)] if value else True
         except IndexError:
-            _return = False
-    else:
-        _return = False
+            result = False
 
-    return _return
+    return result
 
 
 def json_doc_pop(doc, pointer):
@@ -168,9 +170,9 @@ def json_doc_pop(doc, pointer):
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    changed = False
 
     # walk
-    _return = False
     for part in parts[:-1]:
         if isinstance(ref, Mapping) and part in ref:
             ref = ref[part]
@@ -178,22 +180,22 @@ def json_doc_pop(doc, pointer):
             try:
                 ref = ref[int(part)]
             except IndexError:
-                return _return
+                return False
         else:
-            raise Exception("Invalid document")
+            return False
 
     # last
     if isinstance(ref, Mapping) and last in ref:
         del ref[last]
-        _return = True
+        changed = True
     elif isinstance(ref, Sequence) and last.isdigit():
         try:
             del ref[int(last)]
-            _return = True
+            changed = True
         except IndexError:
             pass
 
-    return _return
+    return changed
 
 
 def json_doc_append(doc, pointer, value=None):
@@ -207,28 +209,24 @@ def json_doc_append(doc, pointer, value=None):
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    changed = False
 
     # walk
     for part in parts[:-1]:
-        if isinstance(ref, Mapping):
-            if part not in ref:
-                ref[part] = {}
+        if isinstance(ref, Mapping) and part in ref:
             ref = ref[part]
         elif isinstance(ref, Sequence) and part.isdigit():
             ref = ref[int(part)]
         else:
-            raise Exception('Invalid document')
+            return False
 
     # last
     if isinstance(ref, Mapping) and last in ref \
             and isinstance(ref[last], Sequence):
         ref[last].append(value)
-    elif isinstance(ref, Sequence):
-        pass
-    else:
-        raise Exception('Invalid document')
+        changed = True
 
-    return doc
+    return changed
 
 
 def json_doc_extend(doc, pointer, value=None):
@@ -242,28 +240,24 @@ def json_doc_extend(doc, pointer, value=None):
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    changed = False
 
     # walk
     for part in parts[:-1]:
-        if isinstance(ref, Mapping):
-            if part not in ref:
-                ref[part] = {}
+        if isinstance(ref, Mapping) and part in ref:
             ref = ref[part]
         elif isinstance(ref, Sequence) and part.isdigit():
             ref = ref[int(part)]
         else:
-            raise Exception('Invalid document')
+            return False
 
     # last
     if isinstance(ref, Mapping) and last in ref \
             and isinstance(ref[last], Sequence):
         ref[last].extend(value)
-    elif isinstance(ref, Sequence):
-        pass
-    else:
-        raise Exception('Invalid document')
+        changed = True
 
-    return doc
+    return changed
 
 
 def json_doc_replace(doc, pointer, value=None, search=None):
@@ -279,17 +273,16 @@ def json_doc_replace(doc, pointer, value=None, search=None):
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    changed = False
 
     # walk
     for part in parts[:-1]:
-        if isinstance(ref, Mapping):
-            if part not in ref:
-                ref[part] = {}
+        if isinstance(ref, Mapping) and part in ref:
             ref = ref[part]
         elif isinstance(ref, Sequence) and part.isdigit():
             ref = ref[int(part)]
         else:
-            raise Exception('Invalid document')
+            return False
 
     # last
     if isinstance(ref, Mapping) and last in ref \
@@ -298,12 +291,9 @@ def json_doc_replace(doc, pointer, value=None, search=None):
         for search_k, search_v in enumerate(ref[last]):
             if search == search_v:
                 ref[last][search_k] = value
-    elif isinstance(ref, Sequence):
-        pass
-    else:
-        raise Exception('Invalid document')
+                changed = True
 
-    return doc
+    return changed
 
 
 def json_doc_replace_re(doc, pointer, value=None, search=None):
@@ -319,17 +309,16 @@ def json_doc_replace_re(doc, pointer, value=None, search=None):
 
     ref = doc
     parts, last = validate_pointer(pointer)
+    changed = False
 
     # walk
     for part in parts[:-1]:
-        if isinstance(ref, Mapping):
-            if part not in ref:
-                ref[part] = {}
+        if isinstance(ref, Mapping) and part in ref:
             ref = ref[part]
         elif isinstance(ref, Sequence) and part.isdigit():
             ref = ref[int(part)]
         else:
-            raise Exception('Invalid document')
+            return False
 
     # last
     if isinstance(ref, Mapping) and last in ref \
@@ -339,9 +328,6 @@ def json_doc_replace_re(doc, pointer, value=None, search=None):
         for search_k, search_v in enumerate(ref[last]):
             if search_re.match(str(search_v)):
                 ref[last][search_k] = value
-    elif isinstance(ref, Sequence):
-        pass
-    else:
-        raise Exception('Invalid document')
+                changed = True
 
-    return doc
+    return changed

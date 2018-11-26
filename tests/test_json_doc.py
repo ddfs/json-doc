@@ -69,11 +69,12 @@ class TestJsonDoc(unittest2.TestCase):
         Test json_doc_get
         :return:
         """
-        # test: root
-        self.assertEqual(json_doc_get(self.doc_get, '/'), None)
-
         # test: empty doc
-        self.assertEqual(json_doc_get({}, '/0/1/2/3/0'), None)
+        self.assertEqual(json_doc_get({}, '/'), None)
+        self.assertEqual(json_doc_get({}, '/random-node'), None)
+
+        # test: empty node
+        self.assertEqual(json_doc_get({'empty':{}}, '/empty/node'), None)
 
         # test: 0
         self.assertEqual(json_doc_get(self.doc_get, '/0/1/2/3/0'), 4)
@@ -172,64 +173,75 @@ class TestJsonDoc(unittest2.TestCase):
         Test json_doc_set
         :return:
         """
-        self.assertEqual(json_doc_set(self.doc_set, '/set-int', 123)['set-int'],
-                         123)
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-hex', 0x010101)['set-hex'],
-            0x010101)
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-str', 'str')['set-str'], 'str')
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-list', ['a', 'list'])['set-list'],
-            ['a', 'list'])
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-dict', {'a': 'dict'})['set-dict'],
-            {'a': 'dict'})
+        self.assertTrue(json_doc_set(self.doc_set, '/set-int', 123))
+        self.assertEqual(self.doc_set['set-int'], 123)
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-hex', 0x010101))
+        self.assertEqual(self.doc_set['set-hex'], 0x010101)
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-str', 'str'))
+        self.assertEqual(self.doc_set['set-str'], 'str')
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-list', ['a', 'list']))
+        self.assertEqual(self.doc_set['set-list'], ['a', 'list'])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-dict', {'a': 'dict'}))
+        self.assertEqual(self.doc_set['set-dict'], {'a': 'dict'})
 
         # test: convert
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-int', [123])['set-int'], [123])
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-hex', [0x010101])['set-hex'],
-            [0x010101])
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-str', ['str'])['set-str'], ['str'])
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-list', 'a list')['set-list'],
-            'a list')
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-dict', 'a dict')['set-dict'],
-            'a dict')
+        self.assertTrue(json_doc_set(self.doc_set, '/set-int', [123]))
+        self.assertEqual(self.doc_set['set-int'], [123])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-hex', [0x010101]))
+        self.assertEqual(self.doc_set['set-hex'], [0x010101])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-str', ['str']))
+        self.assertListEqual(self.doc_set['set-str'], ['str'])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-list', 'a list'))
+        self.assertEqual(self.doc_set['set-list'], 'a list')
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-dict', 'a dict'))
+        self.assertEqual(self.doc_set['set-dict'], 'a dict')
 
         # test: create list elements with sub lists
-        self.assertEqual(json_doc_set(self.doc_set, '/set-1', [123])['set-1'],
-                         [123])
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-1/0', 'list-1')['set-1'],
-            ['list-1'])
-        self.assertEqual(json_doc_set(self.doc_set, '/set-2', [123])['set-2'],
-                         [123])
-        self.assertEqual(json_doc_set(self.doc_set, '/set-2/0', [123])['set-2'],
-                         [[123]])
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-2/0/0', [123])['set-2'], [[[123]]])
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-2/0/0/0', [123])['set-2'],
-            [[[[123]]]])
+        self.assertTrue(json_doc_set(self.doc_set, '/set-1', [123]))
+        self.assertListEqual(self.doc_set['set-1'], [123])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-1/0', 'list-1'))
+        self.assertListEqual(self.doc_set['set-1'], ['list-1'])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-2', [123]))
+        self.assertListEqual(self.doc_set['set-2'], [123])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-2/0', [123]))
+        self.assertListEqual(self.doc_set['set-2'], [[123]])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-2/0/0', [123]))
+        self.assertListEqual(self.doc_set['set-2'], [[[123]]])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-2/0/0/0', [123]))
+        self.assertListEqual(self.doc_set['set-2'], [[[[123]]]])
 
         # test: create list elements with sub dicts
-        self.assertEqual(json_doc_set(self.doc_set, '/set-3', [])['set-3'], [])
-        self.assertEqual(json_doc_set(self.doc_set, '/set-3', [{}])['set-3'],
-                         [{}, ])
+        self.assertTrue(json_doc_set(self.doc_set, '/set-3', []))
+        self.assertListEqual(self.doc_set['set-3'], [])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-3', [{}]))
+        self.assertListEqual(self.doc_set['set-3'], [{}, ])
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-3/0/list', [{}]))
+        self.assertDictEqual(self.doc_set['set-3'][0], {'list': [{}]})
+
+        self.assertTrue(json_doc_set(self.doc_set, '/set-3/0/list/0/dict/list',
+                                     ['A', 'B', 'C']))
+        self.assertDictEqual(self.doc_set['set-3'][0]['list'][0],
+                             {'dict': {'list': ['A', 'B', 'C']}})
+
+        self.assertTrue(
+            json_doc_set(self.doc_set, '/set-3/0/list/0/dict/list/1', 'BB'))
         self.assertEqual(
-            json_doc_set(self.doc_set, '/set-3/0/list', [{}])['set-3'][0],
-            {'list': [{}]})
-        self.assertEqual(json_doc_set(self.doc_set, '/set-3/0/list/0/dict/list',
-                                      ['A', 'B', 'C'])['set-3'][0]['list'][0],
-                         {'dict': {'list': ['A', 'B', 'C']}})
-        self.assertEqual(
-            json_doc_set(self.doc_set, '/set-3/0/list/0/dict/list/1',
-                         'BB')['set-3'][0]['list'][0]['dict']['list'][1], 'BB')
+            self.doc_set['set-3'][0]['list'][0]['dict']['list'][1], 'BB')
 
     def test_json_doc_pop(self):
         """
@@ -277,47 +289,45 @@ class TestJsonDoc(unittest2.TestCase):
         Test json_doc_append
         :return:
         """
-        self.assertListEqual(
-            json_doc_append(self.doc_get, '/0/1/2/3', 5)['0']['1']['2']['3'],
-            [4, 5])
+        self.assertTrue(json_doc_append(self.doc_get, '/0/1/2/3', 5))
+        self.assertListEqual(self.doc_get['0']['1']['2']['3'], [4, 5])
 
     def test_json_doc_extend(self):
         """
         Test json_doc_extend
         :return:
         """
-        self.assertDictEqual(
-            json_doc_extend(self.doc_get, '/0/1/2/3', [5, 6])['0']['1']['2'],
-            {'3': [4, 5, 6]})
+        self.assertTrue(json_doc_extend(self.doc_get, '/0/1/2/3', [5, 6]))
+        self.assertDictEqual(self.doc_get['0']['1']['2'], {'3': [4, 5, 6]})
 
     def test_json_doc_replace(self):
         """
         Test json_doc_replace
         :return:
         """
-        self.assertDictEqual(
-            json_doc_replace(self.doc_get, '/0/1/2/3', 22, 4)['0'],
-            {'1': {'2': {'3': [22]}}})
+        self.assertTrue(json_doc_replace(self.doc_get, '/0/1/2/3', 22, 4))
+        self.assertDictEqual(self.doc_get['0'], {'1': {'2': {'3': [22]}}})
 
     def test_json_doc_replace_re(self):
         """
         Test json_doc_replace_re
         :return:
         """
-        self.assertEqual(
-            json_doc_replace_re(self.doc_get, '/list_str', 'aa', 'a')[
-                'list_str'][0], 'aa')
-        self.assertEqual(
-            json_doc_replace_re(self.doc_get, '/list_str', 'aaa', '^a')[
-                'list_str'][0], 'aaa')
-        self.assertListEqual(
-            json_doc_replace_re(self.doc_get, '/list_str', 'aaa', '[ab]')[
-                'list_str'],
-            ['aaa', 'aaa', 'c'])
+        self.assertTrue(
+            json_doc_replace_re(self.doc_get, '/list_str', 'aa', 'a'))
+        self.assertEqual(self.doc_get['list_str'][0], 'aa')
 
-        self.assertEqual(
-            json_doc_replace_re(self.doc_get, '/list_num', 111, '^1$')[
-                'list_num'][0], 111)
+        self.assertTrue(
+            json_doc_replace_re(self.doc_get, '/list_str', 'aaa', '^a'))
+        self.assertEqual(self.doc_get['list_str'][0], 'aaa')
+
+        self.assertTrue(
+            json_doc_replace_re(self.doc_get, '/list_str', 'aaa', '[ab]'))
+        self.assertListEqual(self.doc_get['list_str'], ['aaa', 'aaa', 'c'])
+
+        self.assertTrue(
+            json_doc_replace_re(self.doc_get, '/list_num', 111, '^1$'))
+        self.assertEqual(self.doc_get['list_num'][0], 111)
 
     def tearDown(self):
         """
